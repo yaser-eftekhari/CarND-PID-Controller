@@ -33,9 +33,11 @@ int main()
   uWS::Hub h;
 
   PID pid;
-  // TODO: Initialize the pid variable.
+  // Init(Kp_, Ki_, Kd_)
+  pid.Init(0.6, 0.005, 15.0);
+  int frame = 0;
 
-  h.onMessage([&pid](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
+  h.onMessage([&pid, &frame](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
     // The 4 signifies a websocket message
     // The 2 signifies a websocket event
@@ -51,21 +53,31 @@ int main()
           double speed = std::stod(j[1]["speed"].get<std::string>());
           double angle = std::stod(j[1]["steering_angle"].get<std::string>());
           double steer_value;
+
+          frame++;
           /*
-          * TODO: Calcuate steering value here, remember the steering value is
-          * [-1, 1].
+          * Calcuate steering value here, remember the steering value is [-1, 1].
           * NOTE: Feel free to play around with the throttle and speed. Maybe use
           * another PID controller to control the speed!
           */
-          
+          pid.UpdateError(cte);
+          steer_value = pid.findSteeringAngle();
           // DEBUG
-          std::cout << "CTE: " << cte << " Steering Value: " << steer_value << std::endl;
+          // std::cout << "Frame:" << frame
+          //           << " CTE: " << cte
+          //           << " Steering Value: " << steer_value
+          //           << " D-Error: " << pid.d_error
+          //           << " I-Error: " << pid.i_error
+          //           << std::endl;
+          //
+          std::cout << frame << " " << cte << std::endl;
 
           json msgJson;
           msgJson["steering_angle"] = steer_value;
+          msgJson["speed"] = 20;
           msgJson["throttle"] = 0.3;
           auto msg = "42[\"steer\"," + msgJson.dump() + "]";
-          std::cout << msg << std::endl;
+          // std::cout << msg << std::endl;
           ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
         }
       } else {
